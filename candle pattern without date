@@ -1,0 +1,299 @@
+import mysql.connector
+from datetime import datetime, timedelta
+
+connection = mysql.connector.connect(
+    user='root',
+    host='localhost',
+    database='Eicho',
+    passwd='Eicho@Botmudra'
+)
+
+cursor = connection.cursor()
+
+try:
+    user_date = input("Enter a Date (YYYY-MM-DD): ")
+    end_date = input("Enter End Date (YYYY-MM-DD): ")
+    start_time_str = input("Enter a Time (HH:MM:SS): ")
+    end_time_str = input("Enter End Time (HH:MM:SS): ")
+
+    candles_formed = input("Enter value to retrieve \n( spinning tops, dojis, shooting stars, \nhammers, hanging man, marabuzo, \nbullish engulfing, bearish engulfing, \nbullish belt hold, bearish belt hold ): ")
+    
+
+    start_time = datetime.strptime(start_time_str, "%H:%M:%S") if start_time_str else None
+    end_time = datetime.strptime(end_time_str, "%H:%M:%S") if end_time_str else None
+    
+    if user_date and not end_date and not start_time and not end_time:
+        # If only Date is provided
+        query = f"""
+        SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+        WHERE D_Date = '{user_date}'
+    ) AS data
+"""
+    
+
+    elif user_date and end_date and not start_time and not end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}'
+            ) AS data
+        """
+        
+    elif user_date and end_date and start_time and not end_time:
+        # If Date and Time are provided
+        query = f"""
+            SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time = '{start_time}'
+        ) AS data
+"""
+    
+    elif user_date and start_time and not end_time and not end_date:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time = '{start_time}'
+        ) AS data
+"""
+
+    elif user_date and end_date and start_time and end_time:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        ) AS data
+"""
+
+    elif user_date and start_time and end_time and not end_date:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+        Open,
+        Close,
+        High,
+        Low,
+        (Low = Close) AS red_equal_values,
+        (High = Close) AS green_equal_values,
+        ((Close <= (0.99*High)) AND (Open >= (0.6*High))) AS spinning_top,
+        (Open = Close) AS dojis,
+        CASE
+            WHEN (Low = Close) THEN ((Close-Open)<(0.3*(High - Low))) END AS shooting_stars,
+        CASE
+            WHEN (High = Close) THEN ((Open-Close)<(0.3*(High - Low))) END AS hammers,
+        ((High=Close) AND (((High-Low) - (Close-Open)) <= 2*(Open-Low)) AND ((High-Close) < 0.2*(Close-Open))) AS hanging_man,
+        ((High=Close) AND (Low=Open)) AS marabuzo,
+        ((Close > Open AND Close > High_Prev AND Open < Close_Prev AND Close_Prev < Open_Prev)) AS bullish_engulfing,
+        ((Close < Open AND Close < High_Prev AND Open > Close_Prev AND Close_Prev > Open_Prev)) AS bearish_engulfing,
+        ((Close > Open) AND (Open = Low) AND (Close = High) AND (Close - Open) >= 0.7 * (High - Low)) AS bullish_belt_hold,
+        ((Close < Open) AND (Close = Low) AND (Open = High) AND (Open - Close) >= 0.7 * (High - Low)) AS bearish_belt_hold
+    FROM (
+        SELECT
+            *,
+            LAG(Open) OVER (ORDER BY D_Date, Time) AS Open_Prev,
+            LAG(Close) OVER (ORDER BY D_Date, Time) AS Close_Prev,
+            LAG(High) OVER (ORDER BY D_Date, Time) AS High_Prev,
+            LAG(Low) OVER (ORDER BY D_Date, Time) AS Low_Prev
+        FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        """
+        
+    else:
+        print("Invalid input combination.")
+        exit()
+
+    cursor.execute(query)
+
+    # Fetch all the rows
+    result = cursor.fetchall()
+
+    #column_names = [desc[0] for desc in cursor.description]
+
+    # Print headings
+    #print("\t".join(column_names))
+
+    spinning_tops = 0
+    dojis = 0
+    shooting_stars_sum = 0
+    hammer_count = 0
+    hanging_man_sum = 0
+    marabuzo_sum = 0
+    bullish_engulf_sum = 0
+    bearish_engulf_sum = 0
+    bullish_belt_hold = 0
+    bearish_belt_hold = 0
+
+    selected_value_sum = 0
+    
+    # Print the result
+    for row in result:
+        #print("\t".join(map(str, row)))
+        #print(row)
+        if row[6] == 1 and candles_formed == "spinning tops":
+            selected_value_sum += row[6]
+        if row[7] == 1 and candles_formed == "dojis":
+            #print(row)
+            selected_value_sum += row[7]
+        if row[8] == 1 and candles_formed == "shooting stars" :
+            selected_value_sum += row[8]
+        if row[9] == 1 and candles_formed == "hammer":
+            selected_value_sum += row[9]
+        if row[10] == 1 and candles_formed == "hanging man":
+            selected_value_sum +=row[10]
+        if row[11] == 1 and candles_formed == "marabuzo":
+            selected_value_sum +=row[11]
+        if row[12] == 1 and candles_formed == "bullish engulfing":
+            selected_value_sum +=row[12]
+        if row[13] == 1 and candles_formed == "bearish engulfing":
+            selected_value_sum +=row[13]
+        if row[14] == 1 and candles_formed == "bullish belt hold":
+            selected_value_sum +=row[14]
+        if row[15] == 1 and candles_formed == "bearish belt hold":
+            selected_value_sum +=row[15]
+        
+       
+    print("-----------------------------------------\n")
+    print(f"Total {candles_formed.capitalize()} formed are : ", selected_value_sum)
+    #print("\nTotal Spinning Tops formed are : ", spinning_tops)
+    #print("\nTotal Dojis formed are : ", dojis)
+    #print("\nTotal Shooting stars formed are : ", shooting_stars_sum)
+    #print("\nTotal Hammers formed are : ", hammer_count)
+    #print("\nTotal Hanging Mans formed are : ", hanging_man_sum)
+    #print("\nTotal Marabuzo formed are : ", marabuzo_sum)
+    #print("\nTotal Bullish Engulfing formed are : ", bullish_engulf_sum)
+    #print("\nTotal Bearish Engulfing formed are : ", bearish_engulf_sum)
+    #print("\nTotal Bullish Belt Hold formed are : ", bullish_belt_hold)
+    #print("\nTotal Bearish Belt Hold formed are : ", bearish_belt_hold)
+    
+finally:
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
