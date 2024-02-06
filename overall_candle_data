@@ -1,0 +1,164 @@
+import mysql.connector
+from datetime import datetime, timedelta
+
+connection = mysql.connector.connect(
+    user='root',
+    host='localhost',
+    database='Eicho',
+    passwd='Eicho@Botmudra'
+)
+
+cursor = connection.cursor()
+
+try:
+    user_date = input("Enter a Date (YYYY-MM-DD): ")
+    end_date = input("Enter End Date (YYYY-MM-DD): ")
+    start_time_str = input("Enter a Time (HH:MM:SS): ")
+    end_time_str = input("Enter End Time (HH:MM:SS): ")
+
+    start_time = datetime.strptime(start_time_str, "%H:%M:%S") if start_time_str else None
+    end_time = datetime.strptime(end_time_str, "%H:%M:%S") if end_time_str else None
+
+    if user_date and not end_date and not start_time and not end_time:
+        # If only Date is provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}'
+        """
+    elif user_date and end_date and not start_time and not end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}'
+        """
+    elif user_date and end_date and start_time and not end_time:
+        # If Date and Time are provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time = '{start_time}'
+        """
+    
+    elif user_date and start_time and not end_time and not end_date:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time = '{start_time}'
+        """
+
+    elif user_date and end_date and start_time and end_time:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        """
+
+    elif user_date and start_time and end_time and not end_date:
+        # If Date and Time Range are provided
+        query = f"""
+            SELECT
+            Open,
+            Close,
+            Open > Close AS Open_Greater_than_Close,
+            Close > Open AS Close_Greater_than_Open,
+            ROUND(Close - Open, 5) AS Average_Movement
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        """
+        
+    else:
+        print("Invalid input combination. Please provide a valid combination of date and time.")
+        exit()
+
+    cursor.execute(query)
+
+    # Fetch all the rows
+    result = cursor.fetchall()
+
+    total_average_movement = 0
+    total_buys = 0
+    total_sells = 0
+    total_buys_sum = 0
+    total_sells_sum = 0
+    no_of_buys = 0
+    no_of_sells = 0
+    average_movement_of_buys = 0
+    avg_of_Buys_Movement = 0
+
+    # Print the result and calculate total sum
+    for row in result:
+        total_average_movement += row[4]
+        total_buys += row[3]
+        total_sells += row[2]
+        if row[3] == 1:
+            total_buys_sum += row[4]
+            no_of_buys += row[3]
+        elif row[2] == 1:
+            total_sells_sum += row[4]
+            no_of_sells += row[2]
+
+    if result:
+        average_movement = round(total_average_movement / len(result), 5)
+        total_buys_average = round(total_buys_sum, 5)
+        total_sells_average = round(total_sells_sum, 5)
+        average_movement_of_buys = round(total_buys_average / no_of_buys, 5) * 10000 if no_of_buys > 0 else 0
+        average_movement_of_sells = -(round(total_sells_average / no_of_sells, 5)) * 10000 if no_of_sells > 0 else 0
+        avg_movement_of_Buys = average_movement_of_buys * no_of_buys
+        avg_movement_of_sells = (average_movement_of_sells * no_of_sells)
+        difference_of_average = avg_movement_of_Buys - avg_movement_of_sells
+
+        print("\n*****************************\n")
+        print(f'Data Analyzed for:\nDate: {user_date} - {end_date}\nTime: {start_time.strftime("%H:%M:%S") if start_time else ""} - {end_time.strftime("%H:%M:%S") if end_time else ""}')
+        print("")
+        print(f'Total Buys : ', no_of_buys)
+        print(f'Total Sells : ', no_of_sells)
+        print(f'Average Buy Movement   : ', f'{average_movement_of_buys:.6f}')
+        print(f'Total Buys Movement    : ', f'{avg_movement_of_Buys:.6f}')
+        print("")
+        print(f'Average Sell Movement   : ', f'{average_movement_of_sells:.6f}')
+        print(f'Total Sells Movement   : ', f'{avg_movement_of_sells:.6f}')
+        print("")
+        print("Difference of Average Movement : ", difference_of_average)
+
+        if difference_of_average < 0:
+            print(f"\nCandle closed : BELOW (RED)")
+            print("Average Points Movement : ", -(difference_of_average))
+        else:
+            print(f"\nCandle closed : ABOVE (GREEN)")
+            print("Average Points Moved : ", (difference_of_average))
+
+        print("-------------------------------------------------------")
+
+finally:
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
