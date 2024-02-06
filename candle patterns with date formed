@@ -1,0 +1,288 @@
+import mysql.connector
+from datetime import datetime, timedelta
+
+connection = mysql.connector.connect(
+    user='root',
+    host='localhost',
+    database='Eicho',
+    passwd='Eicho@Botmudra'
+)
+
+cursor = connection.cursor()
+
+try:
+    user_date = input("Enter a Date (YYYY-MM-DD): ")
+    end_date = input("Enter End Date (YYYY-MM-DD): ")
+    start_time_str = input("Enter a Time (HH:MM:SS): ")
+    end_time_str = input("Enter End Time (HH:MM:SS): ")
+
+    candles_formed = input("Enter value to retrieve \n( spinning tops, dragon fly dojis, shooting stars, \nhammers, hanging man, marabuzo, \nbullish engulfing, bearish engulfing, \nbullish belt hold, bearish belt hold ): ").lower()
+
+    start_time = datetime.strptime(start_time_str, "%H:%M:%S") if start_time_str else None
+    end_time = datetime.strptime(end_time_str, "%H:%M:%S") if end_time_str else None
+
+    if user_date and not end_date and not start_time and not end_time:
+        # If only Date is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                (Low = Open) AND (Close-Open)<(0.3*(High - Low)) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}'
+        """
+        
+    elif user_date and end_date and not start_time and not end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                ((Low = Open) AND ((Close-Open)<(0.3*(High - Low)))) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}'
+        """
+
+    elif user_date and end_date and start_time and not end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                ((Low = Open) AND ((Close-Open)<(0.3*(High - Low)))) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time ='{start_time}'
+        """
+
+    elif user_date and end_date and start_time and end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                ((Low = Open) AND ((Close-Open)<(0.3*(High - Low)))) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date BETWEEN '{user_date}' AND '{end_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        """
+
+    elif user_date and not end_date and start_time and not end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                ((Low = Open) AND ((Close-Open)<(0.3*(High - Low)))) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time = '{start_time}'
+        """
+
+    elif user_date and not end_date and start_time and end_time:
+        # If Date Range is provided
+        query = f"""
+            SELECT
+                D_Date,
+                Time,
+                High,
+                Low,
+                Open,
+                Close,
+                (Open=Close) AND (Open=High) AS 'dragon fly doji',
+                Open > Close AS Open_Greater_than_Close,
+                Close > Open AS Close_Greater_than_Open,
+                ROUND(Close - Open, 5) AS Average_Movement,
+                (Open=Close) AND (Open=Low) AS 'gravestone doji',
+                ((Close > Open) AND (Open = Low) AND ((Close - Open) >= 0.7 * (High - Low))) AS 'bullish belt hold',
+                ((Open > Close) AND (Open = High) AND ((Open - Close) >= 0.7 * (High - Low))) AS 'bearish belt hold',
+                ((Low = Close) AND ((Open-Close)<(0.3*(High - Low)))) AS 'red shooting star',
+                ((Low = Open) AND ((Close-Open)<(0.3*(High - Low)))) AS 'green shooting star',
+                (High = Close) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bullish hammer',
+                (High = Open) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bullish hammer',
+                (Low = Close) AND ((Open-Close)<(0.3*(High - Low))) AS 'red bearish hammer',
+                (Low = Open) AND ((Close-Open)<(0.3*(High - Low))) AS 'green bearish hammer',
+                ((High=Close) AND (Low=Open)) AS 'bullish marabuzo',
+                ((High=Open) AND (Low=Close)) AS 'bearish marabuzo'
+            FROM eicho.candle_data_gbpusd_2023_m15
+            WHERE D_Date = '{user_date}' AND Time BETWEEN '{start_time}' AND '{end_time}'
+        """
+        
+    else:
+        print("Invalid Date or Time combination.")
+        exit()
+
+    cursor.execute(query)
+
+    # Fetch all the rows
+    result = cursor.fetchall()
+
+    total_average_movement = 0
+    total_buys = 0
+    total_sells = 0
+    total_buys_sum = 0
+    total_sells_sum = 0
+    no_of_buys = 0
+    no_of_sells = 0
+    average_movement_of_buys = 0
+    avg_of_Buys_Movement = 0
+
+    # Print headings
+    column_names = [desc[0] for desc in cursor.description]
+    #print("\t".join(column_names))
+
+    selected_value_sum = 0
+    found_candle_pattern = False
+
+    for i, row in enumerate(result):
+        if row[column_names.index(candles_formed)] == 1:
+            next_candle = result[i]
+            selected_value_sum += row[column_names.index(candles_formed)]
+            found_candle_pattern = True
+            print(next_candle[column_names.index("D_Date")], next_candle[column_names.index("Time")])
+
+        elif found_candle_pattern:
+            next_candle = result[i+1]
+            found_candle_pattern = False
+            #print(next_candle[column_names.index("D_Date")], next_candle[column_names.index("Time")])
+            #next_candle = result[i+1]
+
+            total_average_movement += row[9]
+            total_sells += row[7]
+            total_buys += row[8]
+            if row[8] == 1:
+                total_buys_sum += row[9]
+                no_of_buys += row[8]
+            elif row[7] == 1:
+                total_sells_sum += row[9]
+                no_of_sells += row[7]
+
+    print("---------------------------------------------\n")
+    print(f"Total {candles_formed.capitalize()} formed are : ", selected_value_sum)
+
+    if result:
+        average_movement = round(total_average_movement / len(result), 5)
+        total_buys_average = round(total_buys_sum, 5)
+        total_sells_average = round(total_sells_sum, 5)
+        average_movement_of_buys = round(total_buys_average / no_of_buys, 5) * 10000 if no_of_buys > 0 else 0
+        average_movement_of_sells = -(round(total_sells_average / no_of_sells, 5)) * 10000 if no_of_sells > 0 else 0
+        avg_movement_of_Buys = average_movement_of_buys * no_of_buys
+        avg_movement_of_sells = (average_movement_of_sells * no_of_sells)
+        difference_of_average = avg_movement_of_Buys - avg_movement_of_sells
+
+        print("\n---------------------------------------------\n")
+        print(f'Data Analyzed for:\nDate: {user_date} - {end_date}\nTime: {start_time.strftime("%H:%M:%S") if start_time else ""} - {end_time.strftime("%H:%M:%S") if end_time else ""}')
+        print("")
+        print(f'Total Buys : ', no_of_buys)
+        print(f'Total Sells : ', no_of_sells)
+        print(f'Average Buy Movement   : ', f'{average_movement_of_buys:.6f}')
+        print(f'Total Buys Movement    : ', f'{avg_movement_of_Buys:.6f}')
+        print("")
+        print(f'Average Sell Movement  : ', f'{average_movement_of_sells:.6f}')
+        print(f'Total Sells Movement   : ', f'{avg_movement_of_sells:.6f}')
+        print("")
+        print("Difference of Average Movement : ", difference_of_average)
+
+        if difference_of_average < 0:
+            print(f"\nCandle closed : BELOW (RED)")
+            print("Average Points Movement : ", -(difference_of_average))
+        elif difference_of_average > 0:
+            print(f"\nCandle closed : ABOVE (GREEN)")
+            print("Average Points Moved : ", (difference_of_average))
+        else:
+            print("No Candle Formed")
+
+        print("------------------------------------------------")
+
+    
+finally:
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
